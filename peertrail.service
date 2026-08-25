@@ -1,0 +1,41 @@
+# /etc/systemd/system/peertrail.service
+#
+#   install -m 0755 peertrail /usr/local/bin/peertrail
+#   cp peertrail.service /etc/systemd/system/
+#   systemctl enable --now peertrail
+#
+# Records go to journald as JSON Lines. To write a file instead, set
+# StandardOutput to append:/var/log/peertrail.json.
+
+[Unit]
+Description=peertrail - outbound peer address audit
+After=network-online.target
+Wants=network-online.target
+
+# A stopped recorder should be visible. Repeated restarts surface through
+# systemd's unit state. These belong in [Unit]: systemd ignores them in
+# [Service] and falls back to its own defaults.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/peertrail -cgroup /sys/fs/cgroup
+Restart=always
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=peertrail
+
+# Attaching a cgroup_sock_addr program needs CAP_NET_ADMIN. CAP_SYS_PTRACE is
+# for reading /proc/<tid>/exe: without it that readlink fails for every process
+# owned by somebody else, which is all of them, and the exe field goes missing
+# from every record without anything reporting an error.
+CapabilityBoundingSet=CAP_BPF CAP_PERFMON CAP_NET_ADMIN CAP_SYS_RESOURCE CAP_SYS_PTRACE
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
