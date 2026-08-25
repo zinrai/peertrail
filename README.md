@@ -97,10 +97,13 @@ $ make               # regenerates the object when bpf/ is newer, then builds
 $ go test -race ./...
 ```
 
-Commit what that produces. `go build` on its own embeds whatever object is
-committed, so building through `make` is what keeps an edit to `bpf/` from
-leaving you running the previous program. A release does not depend on the
-committed object at all: it rebuilds it from the tagged source.
+Commit what that produces. The committed object is what `go build` embeds, what
+`go install` gets, and what a release ships, so building through `make` is what
+keeps an edit to `bpf/` from leaving all three on the previous program.
+
+A release is built from the tag as it stands, with no regeneration. Rebuilding
+in CI would ship an object that differs byte for byte from the one in the tag,
+since a different clang produces a different object from the same source.
 
 ## License
 
